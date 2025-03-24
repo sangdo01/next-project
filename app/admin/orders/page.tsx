@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Search, ArrowUpDown, MoreHorizontal, Eye, FileText, Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,120 +19,71 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-
-// Mock data - would come from API in real app
-const orders = [
-  {
-    id: "ORD-7352",
-    customer: "Sarah Johnson",
-    email: "sarah.j@example.com",
-    date: "2023-03-15",
-    total: 129.99,
-    status: "Completed",
-    items: 3,
-  },
-  {
-    id: "ORD-7351",
-    customer: "Michael Chen",
-    email: "michael.c@example.com",
-    date: "2023-03-14",
-    total: 59.49,
-    status: "Processing",
-    items: 1,
-  },
-  {
-    id: "ORD-7350",
-    customer: "Emma Davis",
-    email: "emma.d@example.com",
-    date: "2023-03-14",
-    total: 89.99,
-    status: "Shipped",
-    items: 2,
-  },
-  {
-    id: "ORD-7349",
-    customer: "James Wilson",
-    email: "james.w@example.com",
-    date: "2023-03-13",
-    total: 149.95,
-    status: "Completed",
-    items: 4,
-  },
-  {
-    id: "ORD-7348",
-    customer: "Olivia Smith",
-    email: "olivia.s@example.com",
-    date: "2023-03-12",
-    total: 34.99,
-    status: "Processing",
-    items: 1,
-  },
-  {
-    id: "ORD-7347",
-    customer: "Noah Brown",
-    email: "noah.b@example.com",
-    date: "2023-03-11",
-    total: 199.99,
-    status: "Shipped",
-    items: 1,
-  },
-  {
-    id: "ORD-7346",
-    customer: "Sophia Martinez",
-    email: "sophia.m@example.com",
-    date: "2023-03-10",
-    total: 79.98,
-    status: "Completed",
-    items: 2,
-  },
-  {
-    id: "ORD-7345",
-    customer: "Liam Taylor",
-    email: "liam.t@example.com",
-    date: "2023-03-09",
-    total: 45.5,
-    status: "Cancelled",
-    items: 1,
-  },
-  {
-    id: "ORD-7344",
-    customer: "Ava Anderson",
-    email: "ava.a@example.com",
-    date: "2023-03-08",
-    total: 124.75,
-    status: "Completed",
-    items: 3,
-  },
-  {
-    id: "ORD-7343",
-    customer: "William Thomas",
-    email: "william.t@example.com",
-    date: "2023-03-07",
-    total: 67.25,
-    status: "Refunded",
-    items: 2,
-  },
-]
+import { getOrders, updateOrderStatus } from "@/lib/actions/order-actions"
+import type { OrderStatus } from "@/lib/actions/order-actions"
 
 export default function OrdersPage() {
+  const [orders, setOrders] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedStatus, setSelectedStatus] = useState("all")
+  const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
 
-  const handleUpdateStatus = (orderId: string, status: string) => {
-    // In a real app, this would call an API to update the order status
-    toast({
-      title: "Order status updated",
-      description: `Order ${orderId} has been marked as ${status}.`,
-    })
+  useEffect(() => {
+    const loadOrders = async () => {
+      try {
+        const ordersData = await getOrders()
+        setOrders(ordersData)
+      } catch (error) {
+        console.error("Failed to load orders:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load orders. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadOrders()
+  }, [toast])
+
+  const handleUpdateStatus = async (orderId: string, status: OrderStatus) => {
+    try {
+      const result = await updateOrderStatus(orderId, status)
+
+      if (result.error) {
+        toast({
+          title: "Error",
+          description: result.error,
+          variant: "destructive",
+        })
+      } else {
+        // Update local state
+        setOrders(orders.map((order) => (order.id === orderId ? { ...order, status } : order)))
+
+        toast({
+          title: "Order status updated",
+          description: `Order ${orderId} has been marked as ${status}.`,
+        })
+      }
+    } catch (error) {
+      console.error("Failed to update order status:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update order status. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   // Filter orders based on search term and status
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.email.toLowerCase().includes(searchTerm.toLowerCase())
+      order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.customer.email.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = selectedStatus === "all" || order.status === selectedStatus
 
     return matchesSearch && matchesStatus
@@ -184,99 +135,105 @@ export default function OrdersPage() {
 
       <Card>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>
-                  <div className="flex items-center gap-1">
-                    Order ID
-                    <ArrowUpDown className="h-3 w-3" />
-                  </div>
-                </TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>
-                  <div className="flex items-center gap-1">
-                    Date
-                    <ArrowUpDown className="h-3 w-3" />
-                  </div>
-                </TableHead>
-                <TableHead>Items</TableHead>
-                <TableHead>
-                  <div className="flex items-center gap-1">
-                    Total
-                    <ArrowUpDown className="h-3 w-3" />
-                  </div>
-                </TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredOrders.length === 0 ? (
+          {isLoading ? (
+            <div className="p-8 text-center">
+              <p className="text-muted-foreground">Loading orders...</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    No orders found. Try adjusting your filters.
-                  </TableCell>
+                  <TableHead>
+                    <div className="flex items-center gap-1">
+                      Order ID
+                      <ArrowUpDown className="h-3 w-3" />
+                    </div>
+                  </TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>
+                    <div className="flex items-center gap-1">
+                      Date
+                      <ArrowUpDown className="h-3 w-3" />
+                    </div>
+                  </TableHead>
+                  <TableHead>Items</TableHead>
+                  <TableHead>
+                    <div className="flex items-center gap-1">
+                      Total
+                      <ArrowUpDown className="h-3 w-3" />
+                    </div>
+                  </TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ) : (
-                filteredOrders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell className="font-medium">{order.id}</TableCell>
-                    <TableCell>
-                      <div>
-                        <p>{order.customer}</p>
-                        <p className="text-sm text-muted-foreground">{order.email}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>{new Date(order.date).toLocaleDateString()}</TableCell>
-                    <TableCell>{order.items}</TableCell>
-                    <TableCell>${order.total.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          order.status === "Completed"
-                            ? "default"
-                            : order.status === "Processing"
-                              ? "outline"
-                              : order.status === "Shipped"
-                                ? "secondary"
-                                : order.status === "Cancelled"
-                                  ? "destructive"
-                                  : "warning"
-                        }
-                      >
-                        {order.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Actions</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleUpdateStatus(order.id, "Shipped")}>
-                            <Truck className="h-4 w-4 mr-2" />
-                            Mark as Shipped
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleUpdateStatus(order.id, "Completed")}>
-                            <FileText className="h-4 w-4 mr-2" />
-                            Mark as Completed
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+              </TableHeader>
+              <TableBody>
+                {filteredOrders.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      No orders found. Try adjusting your filters.
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  filteredOrders.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-medium">{order.id}</TableCell>
+                      <TableCell>
+                        <div>
+                          <p>{order.customer.name}</p>
+                          <p className="text-sm text-muted-foreground">{order.customer.email}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>{new Date(order.date).toLocaleDateString()}</TableCell>
+                      <TableCell>{order.items.length}</TableCell>
+                      <TableCell>${order.total.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            order.status === "Completed"
+                              ? "default"
+                              : order.status === "Processing"
+                                ? "outline"
+                                : order.status === "Shipped"
+                                  ? "secondary"
+                                  : order.status === "Cancelled"
+                                    ? "destructive"
+                                    : "warning"
+                          }
+                        >
+                          {order.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Actions</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleUpdateStatus(order.id, "Shipped")}>
+                              <Truck className="h-4 w-4 mr-2" />
+                              Mark as Shipped
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleUpdateStatus(order.id, "Completed")}>
+                              <FileText className="h-4 w-4 mr-2" />
+                              Mark as Completed
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
           <div className="p-4 border-t">
             <Pagination>
               <PaginationContent>

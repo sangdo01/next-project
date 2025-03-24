@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
+import { createProduct } from "@/lib/actions/product-actions"
 
 export default function NewProductPage() {
   const router = useRouter()
@@ -56,19 +57,46 @@ export default function NewProductPage() {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
 
-    // In a real app, this would call an API to save the product
-    setTimeout(() => {
-      setIsSubmitting(false)
+    try {
+      // Prepare the product data
+      const formData = {
+        name: productData.name,
+        description: productData.description,
+        price: Number.parseFloat(productData.price),
+        category: productData.category,
+        image: productData.images.length > 0 ? productData.images[0] : "/placeholder.svg?height=400&width=400",
+      }
+
+      // Call the server action to create the product
+      const result = await createProduct(formData)
+
+      if (result.error) {
+        toast({
+          title: "Error",
+          description: result.error,
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Product created",
+          description: `${productData.name} has been added to your inventory.`,
+        })
+        router.push("/admin/products")
+      }
+    } catch (error) {
+      console.error("Error creating product:", error)
       toast({
-        title: "Product created",
-        description: `${productData.name} has been added to your inventory.`,
+        title: "Error",
+        description: "Failed to create product. Please try again.",
+        variant: "destructive",
       })
-      router.push("/admin/products")
-    }, 1500)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -128,11 +156,11 @@ export default function NewProductPage() {
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Clothing">Clothing</SelectItem>
-                        <SelectItem value="Electronics">Electronics</SelectItem>
-                        <SelectItem value="Accessories">Accessories</SelectItem>
-                        <SelectItem value="Footwear">Footwear</SelectItem>
-                        <SelectItem value="Home Goods">Home Goods</SelectItem>
+                        <SelectItem value="clothing">Clothing</SelectItem>
+                        <SelectItem value="electronics">Electronics</SelectItem>
+                        <SelectItem value="accessories">Accessories</SelectItem>
+                        <SelectItem value="footwear">Footwear</SelectItem>
+                        <SelectItem value="home-goods">Home Goods</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -238,7 +266,10 @@ export default function NewProductPage() {
                 <CardDescription>Control the visibility of your product.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Select value={productData.status} onValueChange={(value) => handleSelectChange("status", value)}>
+                <Select
+                  value={productData.status}
+                  onValueChange={(value) => handleSelectChange("status", value)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
