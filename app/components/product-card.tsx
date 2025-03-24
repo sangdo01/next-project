@@ -6,15 +6,20 @@ import { ShoppingCart } from "lucide-react"
 import type { Product } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
+import { useCart } from "@/lib/cart-context"
 
 export default function ProductCard({ product }: { product: Product }) {
   const { toast } = useToast()
+  const { addItem } = useCart()
 
-  const addToCart = () => {
-    // In a real app, this would dispatch to a cart state manager
+  const handleAddToCart = () => {
+    if (!product) return
+
+    addItem(product, 1)
+
     toast({
       title: "Added to cart",
-      description: `${product.name} has been added to your cart.`,
+      description: `${product.name} (${1}) has been added to your cart.`,
     })
   }
 
@@ -36,7 +41,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <p className="text-muted-foreground text-sm mb-4 line-clamp-2">{product.description}</p>
         <div className="flex items-center justify-between">
           <span className="text-lg font-bold">${product.price.toFixed(2)}</span>
-          <Button size="sm" onClick={addToCart}>
+          <Button size="sm" onClick={handleAddToCart}>
             <ShoppingCart className="h-4 w-4 mr-2" />
             Add to Cart
           </Button>
