@@ -28,11 +28,13 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <CartProvider>
-            <div className="flex min-h-screen flex-col">
+            {/* <div className="flex min-h-screen flex-col">
               <Navbar />
               <main className="flex-1">{children}</main>
               <Footer />
-            </div>
+            </div> */}
+
+            <div className="flex min-h-screen flex-col">{children}</div>
           </CartProvider>
         </ThemeProvider>
       </body>
