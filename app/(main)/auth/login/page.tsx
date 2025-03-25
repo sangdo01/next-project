@@ -10,27 +10,50 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/lib/auth-context"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
   const router = useRouter()
   const { toast } = useToast()
+  const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError("")
 
-    // In a real app, this would call an authentication API
-    setTimeout(() => {
-      setIsLoading(false)
+    try {
+      const result = await login(email, password)
+
+      if (result.success) {
+        toast({
+          title: "Login successful",
+          description: "Welcome back to our store!",
+        })
+        router.push("/account")
+      } else {
+        setError(result.error || "Invalid email or password")
+        toast({
+          title: "Login failed",
+          description: result.error || "Invalid email or password",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Login error:", error)
+      setError("An error occurred during login")
       toast({
-        title: "Login successful",
-        description: "Welcome back to our store!",
+        title: "Login error",
+        description: "An error occurred during login",
+        variant: "destructive",
       })
-      router.push("/account")
-    }, 1500)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -42,6 +65,8 @@ export default function LoginPage() {
 
       <div className="rounded-lg border shadow-sm p-6">
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">{error}</div>}
+
           <div>
             <Label htmlFor="email">Email Address</Label>
             <Input
@@ -71,6 +96,7 @@ export default function LoginPage() {
               required
               className="mt-1"
             />
+            <p className="text-xs text-muted-foreground mt-1">For demo: use john@example.com / password</p>
           </div>
 
           <Button type="submit" className="w-full" disabled={isLoading}>

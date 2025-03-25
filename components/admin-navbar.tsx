@@ -16,26 +16,26 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { useTheme } from "next-themes"
-import { getCurrentUser, logoutUser } from "@/lib/auth-utils"
+import { useAuth } from "@/lib/auth-context"
 
 export default function AdminNavbar() {
   const router = useRouter()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
-  const [user, setUser] = useState<any>(null)
+  const { user, logout, isAdmin } = useAuth()
 
   useEffect(() => {
     setMounted(true)
-    const currentUser = getCurrentUser()
-    setUser(currentUser)
   }, [])
 
   // Prevent hydration errors
   if (!mounted) return null
 
+  // If not an admin user, don't render the navbar
+  if (!isAdmin) return null
+
   const handleLogout = () => {
-    logoutUser()
-    router.push("/auth/admin-login")
+    logout()
   }
 
   const toggleTheme = () => {
@@ -43,7 +43,10 @@ export default function AdminNavbar() {
   }
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header
+      className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+      data-admin-navbar="true"
+    >
       <div className="container flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-4">
           <Link href="/admin" className="flex items-center gap-2">
@@ -73,7 +76,7 @@ export default function AdminNavbar() {
               <Button variant="ghost" size="icon" className="rounded-full">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src="/placeholder.svg?height=32&width=32" alt="Admin" />
-                  <AvatarFallback>AD</AvatarFallback>
+                  <AvatarFallback>{user?.name?.charAt(0) || "A"}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>

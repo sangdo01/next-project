@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import AdminNavbar from "@/components/admin-navbar"
-import { useAdminProtection } from "@/lib/auth-utils"
+import { useAuth } from "@/lib/auth-context"
 
 interface AdminLayoutProps {
   children: React.ReactNode
@@ -38,20 +38,39 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     users: false,
   })
 
-  // Check if user has admin permissions
-  const { isAuthorized } = useAdminProtection()
+  // Use auth context to check admin permissions
+  const { isAdmin, isLoading } = useAuth()
 
   // Prevent hydration errors
   useEffect(() => {
     setIsMounted(true)
   }, [])
 
+  // Add this CSS to hide the client navbar when in admin section
+  useEffect(() => {
+    if (isMounted) {
+      // Hide the client navbar when in admin section
+      const clientNavbar = document.querySelector('header:not([data-admin-navbar="true"])')
+      if (clientNavbar) {
+        clientNavbar.style.display = "none"
+      }
+
+      // Restore the client navbar when leaving admin section
+      return () => {
+        const clientNavbar = document.querySelector('header:not([data-admin-navbar="true"])')
+        if (clientNavbar) {
+          clientNavbar.style.display = ""
+        }
+      }
+    }
+  }, [isMounted])
+
   if (!isMounted) {
     return null
   }
 
   // Show loading state while checking authorization
-  if (isAuthorized === null) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30">
         <div className="text-center">
@@ -63,8 +82,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   // If not authorized, don't render the admin layout
-  if (isAuthorized === false) {
-    return null
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/30">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
+          <p className="text-muted-foreground mb-6">You don't have permission to access the admin area.</p>
+          <Link href="/auth/admin-login">
+            <Button>Go to Admin Login</Button>
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   const toggleCollapsible = (key: string) => {

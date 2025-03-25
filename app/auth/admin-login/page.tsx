@@ -10,11 +10,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { loginUser } from "@/lib/auth-utils"
+import { useAuth } from "@/lib/auth-context"
 
 export default function AdminLoginPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { adminLogin } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -26,20 +27,20 @@ export default function AdminLoginPage() {
     setError("")
 
     try {
-      // Attempt to login
-      const user = loginUser(email, password)
+      // Attempt to login using the auth context
+      const result = await adminLogin(email, password)
 
-      if (user) {
+      if (result.success) {
         toast({
           title: "Login successful",
           description: "Welcome to the admin dashboard",
         })
         router.push("/admin")
       } else {
-        setError("Invalid email or password")
+        setError(result.error || "Invalid email or password")
         toast({
           title: "Login failed",
-          description: "Invalid email or password",
+          description: result.error || "Invalid email or password",
           variant: "destructive",
         })
       }

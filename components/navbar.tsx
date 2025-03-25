@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useCart } from "@/lib/cart-context"
 import { Badge } from "@/components/ui/badge"
+import { useAuth } from "@/lib/auth-context"
 
 export default function Navbar() {
   const { itemCount } = useCart()
+  const { isAuthenticated, user } = useAuth()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -70,7 +72,7 @@ export default function Navbar() {
             <Input type="search" placeholder="Search products..." className="w-full pl-8" />
           </div>
 
-          <Link href="/auth/login">
+          <Link href={isAuthenticated ? "/account" : "/auth/login"}>
             <Button variant="ghost" size="icon">
               <User className="h-5 w-5" />
               <span className="sr-only">Account</span>
