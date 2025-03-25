@@ -5,7 +5,19 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { LayoutDashboard, ShoppingBag, Users, Package, Tag, Settings, Menu, X, ChevronDown } from "lucide-react"
+import {
+  LayoutDashboard,
+  ShoppingBag,
+  Users,
+  Package,
+  Tag,
+  Settings,
+  Menu,
+  X,
+  ChevronDown,
+  Shield,
+  Star,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
@@ -23,6 +35,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [openItems, setOpenItems] = useState<Record<string, boolean>>({
     products: true,
     customers: false,
+    users: false,
   })
 
   // Check if user has admin permissions
@@ -97,9 +110,24 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       ],
     },
     {
+      title: "Reviews",
+      href: "/admin/reviews",
+      icon: <Star className="h-5 w-5" />,
+    },
+    {
       title: "Discounts",
       href: "/admin/discounts",
       icon: <Tag className="h-5 w-5" />,
+    },
+    {
+      title: "Admin Users",
+      key: "users",
+      icon: <Shield className="h-5 w-5" />,
+      children: [
+        { title: "All Users", href: "/admin/users" },
+        { title: "Add User", href: "/admin/users/new" },
+        { title: "Roles", href: "/admin/users/roles" },
+      ],
     },
     {
       title: "Settings",

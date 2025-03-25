@@ -5,6 +5,8 @@ export interface Product {
   price: number
   image: string
   category: string
+  rating?: number
+  reviewCount?: number
 }
 
 export interface CartItem {
@@ -34,5 +36,17 @@ export interface User {
     zip: string
     country: string
   }
+}
+
+export interface Review {
+  id: string
+  productId: string
+  rating: number
+  title: string
+  comment: string
+  name: string
+  email: string
+  date: string
+  verified: boolean
 }
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { notFound, useParams } from "next/navigation"
 import { Heart, ShoppingCart } from "lucide-react"
@@ -9,6 +9,10 @@ import { Button } from "@/components/ui/button"
 import { useCart } from "@/lib/cart-context"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
+import { StarRating } from "@/components/ui/star-rating"
+import { getProductRating } from "@/lib/actions/review-actions"
+import { ProductReviews } from "@/components/product-reviews"
+
 
 // This would normally fetch from an API
 async function getProductById(id: string): Promise<Product | undefined> {
@@ -94,6 +98,8 @@ async function getRelatedProducts(category: string, currentProductId: string): P
       price: 29.99,
       image: "/placeholder.svg?height=400&width=400",
       category: "clothing",
+      rating: 4.5,
+      reviewCount: 12,
     },
     {
       id: "2",
@@ -102,6 +108,8 @@ async function getRelatedProducts(category: string, currentProductId: string): P
       price: 79.99,
       image: "/placeholder.svg?height=400&width=400",
       category: "clothing",
+      rating: 4.2,
+      reviewCount: 8,
     },
     {
       id: "3",
@@ -110,6 +118,8 @@ async function getRelatedProducts(category: string, currentProductId: string): P
       price: 49.99,
       image: "/placeholder.svg?height=400&width=400",
       category: "accessories",
+      rating: 4.7,
+      reviewCount: 15,
     },
     {
       id: "5",
@@ -118,6 +128,8 @@ async function getRelatedProducts(category: string, currentProductId: string): P
       price: 59.99,
       image: "/placeholder.svg?height=400&width=400",
       category: "clothing",
+      rating: 4.0,
+      reviewCount: 6,
     },
     {
       id: "8",
@@ -126,6 +138,8 @@ async function getRelatedProducts(category: string, currentProductId: string): P
       price: 89.99,
       image: "/placeholder.svg?height=400&width=400",
       category: "accessories",
+      rating: 4.3,
+      reviewCount: 9,
     },
   ]
 
@@ -138,6 +152,7 @@ export default function ProductPage() {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
   const [quantity, setQuantity] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
+  const [ratingInfo, setRatingInfo] = useState({ rating: 0, totalReviews: 0 })
   const { addItem } = useCart()
   const { toast } = useToast()
 
@@ -149,6 +164,20 @@ export default function ProductPage() {
         if (!productData) {
           notFound()
         }
+
+        // Get product rating
+        const ratingData = await getProductRating(params.id)
+        if (!ratingData.error) {
+          setRatingInfo({
+            rating: ratingData.averageRating || 0,
+            totalReviews: ratingData.totalReviews || 0,
+          })
+
+          // Add rating to product data
+          productData.rating = ratingData.averageRating
+          productData.reviewCount = ratingData.totalReviews
+        }
+
         setProduct(productData)
 
         const related = await getRelatedProducts(productData.category, productData.id)
@@ -211,7 +240,13 @@ export default function ProductPage() {
         </div>
 
         <div>
-          <h1 className="text-3xl font-bold mb-4">{product.name}</h1>
+          <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
+
+          {/* Display rating */}
+          <div className="mb-4">
+            <StarRating rating={ratingInfo.rating} size="md" showValue={true} totalReviews={ratingInfo.totalReviews} />
+          </div>
+
           <p className="text-2xl font-bold mb-6">${product.price.toFixed(2)}</p>
 
           <div className="mb-6">
@@ -255,6 +290,9 @@ export default function ProductPage() {
         </div>
       </div>
 
+      {/* Product Reviews Section */}
+      <ProductReviews productId={product.id} averageRating={ratingInfo.rating} totalReviews={ratingInfo.totalReviews} />
+
       <div className="mt-16">
         <h2 className="text-2xl font-bold mb-8">Related Products</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
@@ -271,7 +309,20 @@ export default function ProductPage() {
                   />
                 </div>
                 <div className="p-4">
-                  <h3 className="font-semibold text-lg mb-2 group-hover:underline">{product.name}</h3>
+                  <h3 className="font-semibold text-lg mb-1 group-hover:underline">{product.name}</h3>
+
+                  {/* Display rating for related products */}
+                  {product.rating && (
+                    <div className="mb-2">
+                      <StarRating
+                        rating={product.rating}
+                        size="sm"
+                        showValue={true}
+                        totalReviews={product.reviewCount}
+                      />
+                    </div>
+                  )}
+
                   <p className="text-muted-foreground text-sm mb-4 line-clamp-2">{product.description}</p>
                   <div className="flex items-center justify-between">
                     <span className="text-lg font-bold">${product.price.toFixed(2)}</span>

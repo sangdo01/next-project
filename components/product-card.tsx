@@ -8,6 +8,7 @@ import type { Product } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { useCart } from "@/lib/cart-context"
+import { StarRating } from "@/components/ui/star-rating"
 
 export default function ProductCard({ product }: { product: Product }) {
   const { toast } = useToast()
@@ -44,8 +45,16 @@ export default function ProductCard({ product }: { product: Product }) {
       </Link>
       <div className="p-4">
         <Link href={`/products/${product.id}`}>
-          <h3 className="font-semibold text-lg mb-2 hover:underline">{product.name}</h3>
+          <h3 className="font-semibold text-lg mb-1 hover:underline">{product.name}</h3>
         </Link>
+
+        {/* Display rating if available */}
+        {product.rating !== undefined && (
+          <div className="mb-2">
+            <StarRating rating={product.rating} size="sm" showValue={true} totalReviews={product.reviewCount} />
+          </div>
+        )}
+
         <p className="text-muted-foreground text-sm mb-4 line-clamp-2">{product.description}</p>
         <div className="flex items-center justify-between">
           <span className="text-lg font-bold">${product.price.toFixed(2)}</span>
